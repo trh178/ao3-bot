@@ -52,7 +52,7 @@ def test_password_never_printed(write_config, capsys):
 
 @pytest.mark.parametrize(
     "argv, phase",
-    [(["poll"], 3), (["build", "123"], 4), (["push"], 5), (["serve"], 9), (["status"], 9)],
+    [(["poll"], 3), (["build", "123"], 4), (["serve"], 9), (["status"], 9)],
 )
 def test_unbuilt_commands_name_their_phase(argv, phase, capsys):
     assert main(argv) == 2

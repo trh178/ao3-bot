@@ -13,7 +13,12 @@ Flash CrossPoint, then check everything the software assumes about the reader. R
    - Open File Transfer → Join Network on the home Wi‑Fi.
    - Give the reader a DHCP reservation in the router.
    - Check that `GET http://<ip>/api/status` works from the laptop.
-3. **API:** check that upload, list, download, overwrite, mkdir and delete behave the way the fake reader does. Wherever they differ, fix the fake reader.
+3. **API:** check that upload, list, download, overwrite, mkdir and delete behave the way the fake reader does. Wherever they differ, fix the fake reader. The table in [phase 5](05-push-fake-reader.md) lists what to check:
+   - a missing folder lists as `[]`
+   - an existing file without `overwrite` gives a 400
+   - mkdir on an existing folder gives a 400
+   - `/api/status` reports `device` as X3 or X4
+   - a file inside `/.crosspoint` can be downloaded
 4. **Rendering:** open the phase 4 test EPUBs, including one with images, a long work, and one with an adult warning. Note anything slow or broken.
 5. **Cache hash:** upload a book, open it, then list `/.crosspoint`. Is there an `epub_<cphash(path)>` folder?
 6. **Progress format:** read a book to the middle of chapter 3, then download and decode its `progress.bin`. Does it say chapter 3?

@@ -8,11 +8,13 @@ import os
 import sqlite3
 import stat
 import sys
+import time
 from contextlib import closing
 
 from . import __version__
 from .config import Config, ConfigError, find_config_path, load_config
 from .logs import setup_logging
+from .push import PushResult, push_once
 from .state import StateError, open_db, row_counts, schema_version
 
 log = logging.getLogger("ao3bot")
@@ -21,10 +23,10 @@ log = logging.getLogger("ao3bot")
 PLANNED = {
     "poll": ("check AO3 lists and queue new or updated works", 3),
     "build": ("build or update one work's EPUB", 4),
-    "push": ("upload new and updated EPUBs to the reader", 5),
     "serve": ("run poll, build and push in a loop (the Pi service)", 9),
     "status": ("show the last poll, last push, queue and errors", 9),
 }
+MIN_PUSH_INTERVAL = 10
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -46,8 +48,9 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("build", help=PLANNED["build"][0])
     p.add_argument("work_id", type=int, help="the AO3 work ID")
 
-    p = sub.add_parser("push", help=PLANNED["push"][0])
-    p.add_argument("--once", action="store_true", help="push once and exit")
+    p = sub.add_parser("push", help="upload new and updated EPUBs to the reader")
+    p.add_argument("--once", action="store_true", help="push once and exit (default: keep checking for the reader)")
+    p.add_argument("--interval", type=int, default=60, help="seconds between checks without --once (default 60)")
 
     sub.add_parser("serve", help=PLANNED["serve"][0])
     sub.add_parser("status", help=PLANNED["status"][0])
@@ -60,6 +63,8 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging(args.verbose)
     if args.command == "doctor":
         return doctor(args)
+    if args.command == "push":
+        return push(args)
     _, phase = PLANNED[args.command]
     print(f"ao3bot {args.command}: not built yet (phase {phase})", file=sys.stderr)
     return 2
@@ -120,6 +125,56 @@ def doctor(args: argparse.Namespace) -> int:
     _row("network", "not checked yet (later phases add AO3 and reader checks)")
     print("OK")
     return 0
+
+
+def push(args: argparse.Namespace) -> int:
+    try:
+        cfg = load(args)
+    except ConfigError as e:
+        print(f"config error: {e}", file=sys.stderr)
+        return 1
+    if args.interval < MIN_PUSH_INTERVAL:
+        print(f"--interval must be at least {MIN_PUSH_INTERVAL} seconds", file=sys.stderr)
+        return 1
+    try:
+        conn = open_db(cfg.state_db)
+    except (OSError, sqlite3.Error, StateError) as e:
+        print(f"state.db error: {e}", file=sys.stderr)
+        return 1
+    with closing(conn):
+        if args.once:
+            return _report_push(push_once(cfg, conn), cfg)
+        print(f"checking for the reader at {cfg.device.host} every {args.interval} s; Ctrl+C to stop")
+        try:
+            while True:
+                result = push_once(cfg, conn)
+                if result.eventful:
+                    _report_push(result, cfg)
+                time.sleep(args.interval)
+        except KeyboardInterrupt:
+            return 0
+
+
+def _report_push(result: PushResult, cfg: Config) -> int:
+    if not result.reachable:
+        print(f"reader at {cfg.device.host} isn't answering; is it on File Transfer > Join Network?")
+        return 0
+    print(f"reader {cfg.device.name}: {result.model or '?'}, CrossPoint {result.firmware or '?'}, folder {result.folder or '?'}")
+    for name in result.uploaded:
+        _row("uploaded", name)
+    for name in result.adopted:
+        _row("already on", name)
+    for note in result.skipped:
+        _row("skipped", note)
+    for error in result.errors:
+        _row("error", error)
+    if result.interrupted:
+        _row("stopped", "the reader went away partway through; the rest goes next time")
+    print(
+        f"done: {len(result.uploaded)} uploaded, {len(result.adopted)} already on the reader, "
+        f"{len(result.skipped)} skipped, {len(result.errors)} errors"
+    )
+    return 1 if result.errors else 0
 
 
 def _row(label: str, value: str) -> None:

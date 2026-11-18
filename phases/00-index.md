@@ -13,7 +13,7 @@ A Raspberry Pi at home watches her AO3 **Marked for Later** list and pushes new 
 | 2 | [Project skeleton](02-project-skeleton.md) | Laptop | nothing | Week 1 | ✅ (pip install still to do) |
 | 3 | [Read AO3 lists](03-ao3-lists.md) | Laptop | 2 | Week 1 | ☐ |
 | 4 | [Build EPUBs](04-epub-builder.md) | Laptop | 2 | Week 1 | ☐ |
-| 5 | [Push to a fake reader](05-push-fake-reader.md) | Laptop | 2 | Week 2 | ☐ |
+| 5 | [Push to a fake reader](05-push-fake-reader.md) | Laptop | 2 | Week 2 | ✅ |
 | 6 | [WIP update planner](06-update-planner.md) | Laptop | 4, 5 | Week 2 | ☐ |
 | 7 | [Real device tests](07-device-tests.md) | Laptop + readers | 5, 6 (steps 1–3 need nothing) | Week 2; steps 1–3 any time | ☐ |
 | 8 | [Set up the Pi](08-pi-setup.md) | Pi | nothing | Any time, weeks 1–2 | ☐ |

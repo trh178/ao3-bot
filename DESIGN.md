@@ -177,11 +177,13 @@ data_dir = "/var/lib/ao3bot"               # state.db, cookies, library/
 ```text
 every 60 s:
   GET http://<host>/api/status (2 s timeout); no answer → the reader isn't in File Transfer; wait
-  make /AO3 if it's missing; list it
+  list "/" to find /AO3 (a missing folder lists as []); make it if missing; list it
   for each work whose latest revision isn't on the reader:
-      new work   → POST /upload?path=/AO3  (file = "Author - Title [work_id].epub")
+      she deleted the delivered copy → skip (her delete means she's done with it)
+      new work   → POST /upload?path=/AO3  (file = "Author - Title [work_id].epub"), never overwrite
       update     → the update strategy (§5)
-      re-list, check the name and size → mark delivered in state.db
+      re-list, check the name and size → record it in device_files for this reader
+  a file already there under our name: adopt it if the size matches, otherwise leave it alone
   one upload at a time; stop cleanly if the reader disappears (she left the screen)
 ```
 

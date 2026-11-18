@@ -7,6 +7,7 @@ new entry to MIGRATIONS. Never edit an entry that has already run on the Pi.
 from __future__ import annotations
 
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 MIGRATIONS: list[str] = [
@@ -91,6 +92,11 @@ def migrate(conn: sqlite3.Connection) -> int:
             conn.rollback()
             raise
     return schema_version(conn)
+
+
+def now_iso() -> str:
+    """The current time in UTC, as stored in state.db: "2026-11-18T13:40:00Z"."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def row_counts(conn: sqlite3.Connection) -> dict[str, int]:
