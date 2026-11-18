@@ -1,6 +1,6 @@
 # Phase 7: Real device tests
 
-**Where:** laptop + readers · **Needs:** 5 and 6 (steps 1–3 need nothing, so do them any time) · **Unblocks:** 9 · **Target:** week 2 (Nov 24–30)
+**Status:** ☐ Waiting on the readers. The software it tests (phases 5 and 6) is done. · **Where:** laptop + readers · **Needs:** the readers, 5, 6 · **Unblocks:** 9 · **Target:** as soon as the readers arrive (aim for Nov 24–30)
 
 ## Task
 
@@ -44,7 +44,9 @@ Flash CrossPoint, then check everything the software assumes about the reader. R
 
 ## How to test
 
-The phase is the test. Run `ao3bot push --once` with `host` set to the test reader's IP, using public test works only. Steps 1–3 need no ao3bot code: a browser or `curl` against the reader's web page and API is enough.
+The phase is the test. Run `ao3bot push --once` with `host` set to the test reader's IP. Steps 1–3 need no ao3bot code: a browser or `curl` against the reader's web page and API is enough.
+
+**Test books without AO3:** until phase 4 can build EPUBs from AO3, use the sample EPUBs in the project root. Seed `state.db` with them the way `tests/test_updates.py` does, and use `tests/epubs.py` to make "revision 1" (`truncate_spine`) and "revision 2" (the full book). That covers steps 4–9 without a single AO3 request.
 
 ## How it fits
 

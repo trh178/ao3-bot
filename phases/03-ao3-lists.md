@@ -43,7 +43,8 @@ Write `ao3.py` and the `poll` command. They find works that are new or updated o
 
 - **Fixture tests.** Save pages from your browser into `tests/fixtures/`, logged out, and write the parser tests against them. Those tests never touch AO3.
 - **Backoff and login-page detection.** Test these with mocked responses, not the real site.
-- **Live checks.** Keep them to a handful of requests, logged out, against public works.
+- **Live checks.** Keep them to a handful of requests, logged out, against public works. Run them by hand with `ao3bot poll --dry-run`, not from pytest: `tests/conftest.py` blocks every connection except localhost, so a test can never reach AO3.
+- **Schema.** `state.db` is at v2 after phase 6. Backoff state and the build queue need a v3 entry in `MIGRATIONS` in `state.py`.
 
 ## How it fits
 

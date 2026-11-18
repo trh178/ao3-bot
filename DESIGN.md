@@ -3,7 +3,7 @@
 **Decision:** a Raspberry Pi at home, on the same Wi‑Fi as the reader. It watches her AO3 list and pushes EPUBs to the reader over the local network.
 **Build plan:** [phases/00-index.md](phases/00-index.md)
 **Gift date:** Tue Dec 15, 2026 (backup: Tue Jan 5, 2027)
-**Hardware (in hand):** an Xteink X3 and an Xteink X4, both running [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) 2.0.x. One is hers and the other is the test reader. Plus a Raspberry Pi Zero 2 W.
+**Hardware (secured, not delivered yet):** an Xteink X3 and an Xteink X4, both to run [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) 2.0.x. One is hers and the other is the test reader. Plus a Raspberry Pi Zero 2 W.
 
 ---
 
@@ -206,7 +206,7 @@ every 60 s:
 This comes from CrossPoint's source; release 2.0.0 has the same logic as `develop`.
 
 - **The position file** is `/.crosspoint/epub_<hash>/progress.bin`.
-  - `<hash>` is `std::hash<std::string>` of the book's **full SD path**, for example `/AO3/Author - Title [123].epub`. On the reader's 32-bit chip this is libstdc++'s MurmurHash2 with seed `0xc70f6907`, written in decimal. **This is not yet verified on a device.**
+  - `<hash>` is `std::hash<std::string>` of the book's **full SD path**, for example `/AO3/Author - Title [123].epub`. On the reader's 32-bit chip this is libstdc++'s MurmurHash2 with seed `0xc70f6907`, written in decimal. The bot's port matches SMHasher's published value. **That the reader hashes exactly this path string is not yet verified on a device.**
 - **The format** is little-endian: `u16` chapter (spine index), `u16` page, `u16` page count, then an optional `u32` character offset within the chapter. When a book opens, the character offset wins over the page number, so her place survives re-pagination.
 - **Any network replace wipes her position.** That covers web upload (with or without `overwrite`), WebDAV PUT and OPDS re-download. Each one deletes the whole `epub_<hash>` folder, and the book then opens at the start. Bookmarks and the recent-books list survive.
 - **The HTTP API can read and write `/.crosspoint`.** `GET /download` reads `progress.bin`, and `POST /mkdir` plus `POST /upload` write it back. (WebDAV blocks paths that start with a dot.)

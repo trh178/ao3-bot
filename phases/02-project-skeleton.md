@@ -15,7 +15,9 @@ Create the `ao3bot` Python package that every later phase plugs into. There's no
     config.py          loads and checks config.toml
     state.py           state.db schema and migrations
     logs.py            logging with the password redacted
-                       (later: ao3.py, build.py, push.py, planner.py, web.py)
+                       (since added: reader.py, names.py, push.py in phase 5;
+                        crosspoint.py, epub.py, planner.py in phase 6.
+                        Still to come: ao3.py, build.py, web.py)
   tests/               pytest: config, state, CLI, log redaction
   pyproject.toml       dependencies: fanficfare, requests, beautifulsoup4 (pytest for dev)
   config.example.toml  placeholders only

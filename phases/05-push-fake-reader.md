@@ -19,7 +19,7 @@ What was built:
   2. Find `/AO3` by listing its parent folder, and create it if it's missing. If the card already has it with different capitals (e.g. `/ao3`), use that spelling.
   3. Upload each work whose newest revision isn't on the reader yet, one at a time, never overwriting.
   4. List the folder again, check the name and size, then record the file in `device_files`.
-  5. Updates go side by side as `Author - Title [id] (ch N).epub`, next to the old copy. Phase 6 adds in-place updates and cleanup.
+  5. Updates went side by side as `Author - Title [id] (ch N).epub`, next to the old copy. Phase 6 has since added in-place updates and cleanup.
 - **`ao3bot push --once`** pushes once and prints a report. Plain **`ao3bot push`** checks for the reader every 60 s (`--interval`) until Ctrl+C, and prints only when something happened.
 - **`tests/fake_reader.py`** is the fake reader. It can also run by hand (see How to test).
 
@@ -36,7 +36,7 @@ From `docs/webserver-endpoints.md` and `src/network/CrossPointWebServer.cpp` on 
 | `GET /download?path=` | 404 if the file is missing, and 403 if **the last part** of the path starts with `.`. So `/.crosspoint/epub_…/progress.bin` can be downloaded, which phase 6 needs. |
 | `POST /delete` | Form field `path` (or a `paths` JSON list). It won't delete a folder that isn't empty. |
 
-The fake records the paths whose cache the real reader would clear, but it doesn't delete a cache folder yet. That needs CrossPoint's cache-folder hash, which phase 6 adds.
+Since phase 6, the fake also deletes a book's `/.crosspoint/epub_<hash>` folder on overwrite and delete, the way the real reader does.
 
 ### Decisions made while building it
 
@@ -54,7 +54,7 @@ The fake records the paths whose cache the real reader would clear, but it doesn
 
 ## How to test
 
-- **`pytest`:** 81 tests, about 10 s. There are 40 new ones: filenames, fake-reader behaviour checked through the real client, and the push scenarios above. The fake reader runs on `127.0.0.1`. The network guard blocks anything else, so the tests can't reach AO3.
+- **`pytest`:** at the end of phase 5 there were 81 tests (171 after phase 6). Phase 5 added 40: filenames, fake-reader behaviour checked through the real client, and the push scenarios above. The fake reader runs on `127.0.0.1`. The network guard blocks anything else, so the tests can't reach AO3.
 - **By hand, in two terminals:**
   ```bash
   python -m tests.fake_reader --root fake-sd --port 8080
@@ -63,7 +63,7 @@ The fake records the paths whose cache the real reader would clear, but it doesn
 
 ## How it fits
 
-This is the delivery half of the system. Phase 6 adds in-place updates on top of it, using `ReaderClient.download` and `.delete`, which are already here. Phase 7 points the pusher at the real reader to check that the fake one behaves the same.
+This is the delivery half of the system. Phase 6 built in-place updates and cleanup on top of it, using `ReaderClient.download` and `.delete`. Phase 7 points the pusher at the real reader to check that the fake one behaves the same.
 
 ## Watch out for
 

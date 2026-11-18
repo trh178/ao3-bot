@@ -11,6 +11,7 @@ Add the `ao3bot serve` command and run it on the Pi under systemd. This is the f
   - the daily WIP check
   - every 60 s: push, if the reader answers
   - a status page on port 8080, showing the last poll, the last push, the queue, recent errors, the backoff state, and what's on the reader
+- **Reuse what's built.** `ao3bot push` already loops every 60 s and calls `push.push_once()`, which returns a `PushResult` with everything the status page needs. `serve` should call the same function.
 - **`status`** prints the same information in the terminal.
 - **`doctor` on the Pi** checks that the config is OK, that AO3 is reachable, that the reader is reachable (if it's on), the free disk space, and the FanFicFare version.
 - **A lock file** makes sure only one copy of `ao3bot` runs at a time.
