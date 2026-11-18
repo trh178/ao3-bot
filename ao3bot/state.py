@@ -48,6 +48,23 @@ MIGRATIONS: list[str] = [
 
     CREATE INDEX device_files_by_work ON device_files(device, work_id);
     """,
+    # v2: phase 6. When she opened each copy, when the bot removed or replaced
+    # it, and positions still to write if an in-place update was cut off.
+    """
+    ALTER TABLE device_files ADD COLUMN opened_at TEXT;    -- first seen in recent.json
+    ALTER TABLE device_files ADD COLUMN removed_at TEXT;   -- deleted or replaced by the bot
+
+    CREATE TABLE pending_progress (
+        device      TEXT NOT NULL,
+        path        TEXT NOT NULL,     -- the book on the reader
+        work_id     INTEGER NOT NULL,
+        rev         INTEGER NOT NULL,  -- the revision being uploaded
+        size        INTEGER NOT NULL,  -- its size, to tell whether the upload landed
+        progress    BLOB NOT NULL,     -- the progress.bin to write once it has
+        created_at  TEXT NOT NULL,
+        PRIMARY KEY (device, path)
+    );
+    """,
 ]
 
 SCHEMA_VERSION = len(MIGRATIONS)

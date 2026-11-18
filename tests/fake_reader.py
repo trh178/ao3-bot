@@ -11,6 +11,14 @@ src/network/CrossPointWebServer.cpp (develop branch, read 2026-11-18):
 - POST /mkdir   (form: name, path)  400 "Folder already exists"
 - POST /delete  (form: path | paths)
 
+Uploading over a book or deleting it clears that book's cache folder,
+/.crosspoint/epub_<std::hash(path)>, the way the real reader does. The fake uses
+ao3bot's own cphash for this. The hash itself is checked separately: against
+SMHasher's published MurmurHash2 value in tests, and on the device in phase 7.
+
+The test helpers open_book(), recent() and move_to_read() play her side:
+opening a book, saving her page, and the reader moving a finished book to /read.
+
 Anything the real reader does differently should be fixed here once phase 7 finds it.
 
 Run it by hand with:  python -m tests.fake_reader --root some/folder --port 8080
@@ -21,12 +29,16 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from ao3bot.crosspoint import READ_FOLDER, RECENT_JSON, cache_dir
+
 HIDDEN_ITEMS = ("System Volume Information", "XTCache")
+MAX_RECENT_BOOKS = 10
 
 
 class FakeReader:
@@ -87,6 +99,55 @@ class FakeReader:
         if any(p in (".", "..") for p in parts):
             raise ValueError(f"unsafe path {device_path!r}")
         return self.root.joinpath(*parts)
+
+    def clear_cache(self, device_path: str) -> None:
+        """What the firmware does after an upload over a book, or a delete."""
+        self.cleared_caches.append(device_path)
+        shutil.rmtree(self.local(cache_dir(device_path)), ignore_errors=True)
+
+    # -- her side (test helpers) ---------------------------------------------
+
+    def open_book(self, device_path: str, progress: bytes | None = None) -> None:
+        """She opens a book: the reader indexes it, saves her page, and puts it first in recent.json."""
+        cache = self.local(cache_dir(device_path))
+        cache.mkdir(parents=True, exist_ok=True)
+        (cache / "book.bin").write_bytes(b"fake index")
+        if progress is not None:
+            (cache / "progress.bin").write_bytes(progress)
+        self._write_recent([device_path] + [p for p in self.recent() if p != device_path])
+
+    def progress_of(self, device_path: str) -> bytes | None:
+        path = self.local(cache_dir(device_path)) / "progress.bin"
+        return path.read_bytes() if path.is_file() else None
+
+    def recent(self) -> list[str]:
+        path = self.local(RECENT_JSON)
+        if not path.is_file():
+            return []
+        return [b["path"] for b in json.loads(path.read_text(encoding="utf-8"))["books"]]
+
+    def move_to_read(self, device_path: str) -> str:
+        """The reader's "move finished books to the Read folder": file, cache folder and recent.json."""
+        name = device_path.rsplit("/", 1)[-1]
+        stem, dot, ext = name.rpartition(".")
+        dest = f"{READ_FOLDER}/{name}"
+        n = 2
+        while self.local(dest).exists():
+            dest = f"{READ_FOLDER}/{stem} ({n}).{ext}"
+            n += 1
+        self.local(READ_FOLDER).mkdir(parents=True, exist_ok=True)
+        self.local(device_path).rename(self.local(dest))
+        old_cache, new_cache = self.local(cache_dir(device_path)), self.local(cache_dir(dest))
+        if old_cache.exists():
+            old_cache.rename(new_cache)
+        self._write_recent([dest if p == device_path else p for p in self.recent()])
+        return dest
+
+    def _write_recent(self, paths: list[str]) -> None:
+        path = self.local(RECENT_JSON)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        books = [{"path": p, "title": "", "author": "", "coverBmpPath": ""} for p in paths[:MAX_RECENT_BOOKS]]
+        path.write_text(json.dumps({"books": books}), encoding="utf-8")
 
 
 def normalize(path: str) -> str:
@@ -230,7 +291,7 @@ class _Handler(BaseHTTPRequestHandler):
             return self._send(400, "Failed to create file on SD card")
         target.write_bytes(data)
         reader.uploads.append(device_path)
-        reader.cleared_caches.append(device_path)
+        reader.clear_cache(device_path)
         if reader.drop_response_after_upload:
             reader.drop_response_after_upload = False
             return self._hang_up()
@@ -291,7 +352,7 @@ class _Handler(BaseHTTPRequestHandler):
                     local.rmdir()
             else:
                 local.unlink()
-                self.reader.cleared_caches.append(path)
+                self.reader.clear_cache(path)
         if failed:
             return self._send(500, f"Failed to delete some items: {failed}")
         self._send(200, "All items deleted successfully")

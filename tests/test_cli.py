@@ -1,6 +1,7 @@
 import pytest
 
 from ao3bot.cli import main
+from ao3bot.state import SCHEMA_VERSION
 
 from .conftest import MINIMAL
 
@@ -20,7 +21,7 @@ def test_doctor_ok_and_creates_state_db(write_config, capsys):
     assert (path.parent / "data" / "state.db").is_file()
     out = capsys.readouterr().out
     assert out.rstrip().endswith("OK")
-    assert "schema v1" in out
+    assert f"schema v{SCHEMA_VERSION}" in out
 
 
 def test_doctor_twice_is_fine(write_config):

@@ -210,7 +210,9 @@ This comes from CrossPoint's source; release 2.0.0 has the same logic as `develo
 - **The format** is little-endian: `u16` chapter (spine index), `u16` page, `u16` page count, then an optional `u32` character offset within the chapter. When a book opens, the character offset wins over the page number, so her place survives re-pagination.
 - **Any network replace wipes her position.** That covers web upload (with or without `overwrite`), WebDAV PUT and OPDS re-download. Each one deletes the whole `epub_<hash>` folder, and the book then opens at the start. Bookmarks and the recent-books list survive.
 - **The HTTP API can read and write `/.crosspoint`.** `GET /download` reads `progress.bin`, and `POST /mkdir` plus `POST /upload` write it back. (WebDAV blocks paths that start with a dot.)
-- **The reader records what she opened.** `/.crosspoint/recent.json` lists the last 10 books she opened.
+- **The reader records what she opened.** `/.crosspoint/recent.json` is `{"books":[{"path", "title", ...}]}`, newest first, with at most 10 entries.
+- **A finished book can move.** With "Move finished books to Read folder" on (it's off by default), the reader moves a finished book to `/read` and renames its cache folder to match. The bot still finds it and sends updates as a new copy in `/AO3`. It's simpler to leave the setting off.
+- **The hash is MurmurHash2.** libstdc++'s 32-bit `std::hash` is MurmurHash2, and the bot's port reproduces SMHasher's published verification value. Phase 7 checks that the reader hashes exactly the path string the bot uses.
 
 ### 5.2 Mode 1: update in place and keep her spot
 
@@ -251,8 +253,11 @@ The bot uses Mode 2 whenever Mode 1 isn't certain:
 
 Mode 1 runs only when everything checks out. The bot falls back to Mode 2 in any of these cases:
 - `progress.bin` isn't 4, 6 or 10 bytes long,
-- there's no cache folder for a book she has opened,
-- her chapter's hash isn't in the new revision.
+- the book has no cache folder and the hash isn't proven on this reader. A proven hash means a book in `recent.json` has its folder where `cphash` says, or there are no cache folders at all. With a proven hash, a missing folder just means "never opened".
+- her chapter's hash isn't in the new revision,
+- the old copy was moved to `/read`.
+
+**Cut-off updates are finished on the next run.** Before an in-place upload, the position to write is saved in `pending_progress`. If the reader goes away after the upload lands, the next run writes the position, unless she has saved a newer page since.
 
 **The rule: an update never costs her place.** At worst, she has two copies of a book for a while.
 
@@ -262,7 +267,7 @@ Mode 1 runs only when everything checks out. The bot falls back to Mode 2 in any
 
 | What | Checked in |
 |---|---|
-| The cache folder name (`cphash`) on a real reader | Phase 7 |
+| That the reader hashes exactly the path string the bot uses (the hash function itself is verified against SMHasher) | Phase 7 |
 | That File Transfer stays up overnight on the charger | Phase 7 |
 | That `recent.json` updates when she opens a book | Phase 7 |
 | The exact web API parameter names | Phase 5 (from the docs), Phase 7 (on the device) |

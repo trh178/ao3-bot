@@ -14,7 +14,8 @@ Write `build.py` and the `ao3bot build <work_id>` command, which turn a work ID 
 - **A new work:** run FanFicFare on `https://archiveofourown.org/works/<id>` in a temp folder, then save the result as `library/<id>/rev-1.epub`.
 - **An update:** copy the latest revision to `rev-<n+1>.epub`, then run FanFicFare `-u` on the copy. It fetches only the new chapters.
 - **Use `--non-interactive`, and `--json-meta`** to get the title, authors, chapter count and completion status.
-- **Record in `state.db`:** the revision number, chapter count, the file's sha256, and **a hash of each chapter's text**. Phase 6 needs the chapter hashes.
+- **Record in `state.db`:** the revision number, chapter count, the file's sha256, and **a hash of each chapter's text** in `revisions.chapter_hashes`. Use `ao3bot.epub.spine_hashes()`, which phase 6 built, so the hashes match what the planner compares.
+- **When pruning old revisions,** keep the `revisions` row of any revision that's still on a reader. The planner needs its chapter hashes even after the file is gone.
 - **Keep the last 3 revisions** of each work, and delete older ones.
 
 ## Done when

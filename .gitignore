@@ -1,6 +1,11 @@
 # Holds her AO3 password once it's filled in. Never commit or share it.
 config.toml
 
+# Sample books dropped in the project root for local testing. They're real
+# (copyrighted) books, so never commit them. Tests that use them skip when
+# they're missing.
+/*.epub
+
 # Local state: the database, cookies, and the EPUB library
 data/
 library/

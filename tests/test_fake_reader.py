@@ -4,14 +4,6 @@ import pytest
 
 from ao3bot.reader import FileExists, ReaderClient, ReaderError
 
-from .fake_reader import FakeReader
-
-
-@pytest.fixture
-def reader(tmp_path):
-    with FakeReader(tmp_path / "sd") as r:
-        yield r
-
 
 @pytest.fixture
 def client(reader):
@@ -110,3 +102,39 @@ def test_deleting_a_folder_that_is_not_empty_fails(client):
     client.upload("/AO3", "a.epub", b"x")
     with pytest.raises(ReaderError, match="folder not empty"):
         client.delete("/AO3")
+
+
+def test_overwriting_a_book_wipes_its_cache_folder(reader, client):
+    client.mkdir("/", "AO3")
+    client.upload("/AO3", "a.epub", b"one")
+    reader.open_book("/AO3/a.epub", b"\x02\x00\x05\x00\x09\x00")
+    assert reader.progress_of("/AO3/a.epub") is not None
+    client.upload("/AO3", "a.epub", b"two", overwrite=True)
+    assert reader.progress_of("/AO3/a.epub") is None
+
+
+def test_deleting_a_book_wipes_its_cache_folder(reader, client):
+    client.mkdir("/", "AO3")
+    client.upload("/AO3", "a.epub", b"one")
+    reader.open_book("/AO3/a.epub", b"\x02\x00\x05\x00\x09\x00")
+    client.delete("/AO3/a.epub")
+    assert reader.progress_of("/AO3/a.epub") is None
+
+
+def test_the_cache_folder_lists_and_recent_json_downloads(reader, client):
+    client.mkdir("/", "AO3")
+    client.upload("/AO3", "a.epub", b"one")
+    reader.open_book("/AO3/a.epub")
+    names = {f.name for f in client.list("/.crosspoint")}
+    assert "recent.json" in names and any(n.startswith("epub_") for n in names)
+    assert b"/AO3/a.epub" in client.download("/.crosspoint/recent.json")
+
+
+def test_move_to_read_takes_the_cache_along(reader, client):
+    client.mkdir("/", "AO3")
+    client.upload("/AO3", "a.epub", b"one")
+    reader.open_book("/AO3/a.epub", b"\x02\x00\x05\x00\x09\x00")
+    moved = reader.move_to_read("/AO3/a.epub")
+    assert moved == "/read/a.epub"
+    assert reader.progress_of(moved) == b"\x02\x00\x05\x00\x09\x00"
+    assert reader.recent() == ["/read/a.epub"]

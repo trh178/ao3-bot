@@ -162,16 +162,24 @@ def _report_push(result: PushResult, cfg: Config) -> int:
     print(f"reader {cfg.device.name}: {result.model or '?'}, CrossPoint {result.firmware or '?'}, folder {result.folder or '?'}")
     for name in result.uploaded:
         _row("uploaded", name)
+    for name in result.replaced:
+        _row("replaced", name)
+    for name in result.removed:
+        _row("removed", f"{name} (old copy; she's moved to the new one)")
     for name in result.adopted:
         _row("already on", name)
+    for note in result.notes:
+        _row("why", note)
     for note in result.skipped:
         _row("skipped", note)
     for error in result.errors:
         _row("error", error)
     if result.interrupted:
         _row("stopped", "the reader went away partway through; the rest goes next time")
+    removed = len(result.removed)
     print(
-        f"done: {len(result.uploaded)} uploaded, {len(result.adopted)} already on the reader, "
+        f"done: {len(result.uploaded)} uploaded, {len(result.replaced)} replaced in place, "
+        f"{removed} old {'copy' if removed == 1 else 'copies'} removed, {len(result.adopted)} already on the reader, "
         f"{len(result.skipped)} skipped, {len(result.errors)} errors"
     )
     return 1 if result.errors else 0

@@ -1,60 +1,9 @@
-import json
-
-import pytest
+"""Phase 5: getting new works onto the reader, and the rules for what's never touched."""
 
 from ao3bot.cli import main
-from ao3bot.config import load_config
 from ao3bot.push import push_once
-from ao3bot.state import open_db
 
-from .fake_reader import FakeReader
-
-
-@pytest.fixture
-def reader(tmp_path):
-    with FakeReader(tmp_path / "sd") as r:
-        yield r
-
-
-@pytest.fixture
-def env(tmp_path, reader):
-    """A config pointing at the fake reader, and an open state.db."""
-    path = tmp_path / "config.toml"
-    path.write_text(f'[device]\nhost = "{reader.host}"\nname = "test-x4"\n', encoding="utf-8")
-    cfg = load_config(path)
-    conn = open_db(cfg.state_db)
-    yield cfg, conn
-    conn.close()
-
-
-def epub_bytes(work_id: int, rev: int) -> bytes:
-    return f"fake epub {work_id} rev {rev}\n".encode() * (rev + 1)
-
-
-def add_work(cfg, conn, work_id, title="A Title", authors=("An Author",), chapters=3):
-    """A work with one built revision and its library file, as phase 4 will leave it."""
-    with conn:
-        conn.execute(
-            "INSERT INTO works (id, title, authors, chapters, first_seen) VALUES (?, ?, ?, ?, ?)",
-            (work_id, title, json.dumps(list(authors)), f"{chapters}/?", "2026-11-18T00:00:00Z"),
-        )
-    add_revision(cfg, conn, work_id, rev=1, chapters=chapters)
-
-
-def add_revision(cfg, conn, work_id, rev, chapters):
-    with conn:
-        conn.execute(
-            "INSERT INTO revisions (work_id, rev, chapters, sha256, chapter_hashes, built_at) "
-            "VALUES (?, ?, ?, 'x', '[]', '2026-11-18T00:00:00Z')",
-            (work_id, rev, chapters),
-        )
-    path = cfg.library_dir / str(work_id) / f"rev-{rev}.epub"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(epub_bytes(work_id, rev))
-
-
-def rows(conn):
-    return [dict(r) for r in conn.execute("SELECT * FROM device_files ORDER BY id")]
+from .helpers import add_revision, add_work, placeholder_epub, rows
 
 
 def test_unreachable_reader_changes_nothing(env, reader):
@@ -75,7 +24,7 @@ def test_pushes_every_built_work(env, reader):
     assert result.uploaded == ["Ann - First [101].epub", "Bea - Second [102].epub"]
     assert result.errors == []
     assert (reader.root / "AO3").is_dir()
-    assert (reader.root / "AO3" / "Ann - First [101].epub").read_bytes() == epub_bytes(101, 1)
+    assert (reader.root / "AO3" / "Ann - First [101].epub").read_bytes() == placeholder_epub(101, 1)
     recorded = rows(conn)
     assert [r["path"] for r in recorded] == ["/AO3/Ann - First [101].epub", "/AO3/Bea - Second [102].epub"]
     assert {r["device"] for r in recorded} == {"test-x4"}
@@ -131,22 +80,36 @@ def test_files_that_are_not_ours_are_never_touched(env, reader):
     assert reader.uploads == ["/AO3/An Author - Fine [6].epub"]
 
 
-def test_update_goes_side_by_side(env, reader):
+def test_auto_replaces_a_never_opened_book_in_place(env, reader):
     cfg, conn = env
     add_work(cfg, conn, 7, "Wip", chapters=3)
     push_once(cfg, conn)
     add_revision(cfg, conn, 7, rev=2, chapters=4)
 
     result = push_once(cfg, conn)
-    assert result.uploaded == ["An Author - Wip [7] (ch 4).epub"]
-    assert (reader.root / "AO3" / "An Author - Wip [7].epub").read_bytes() == epub_bytes(7, 1)  # old copy kept
+    assert result.replaced == ["An Author - Wip [7].epub"]
+    assert [p.name for p in (reader.root / "AO3").iterdir()] == ["An Author - Wip [7].epub"]
+    assert (reader.root / "AO3" / "An Author - Wip [7].epub").read_bytes() == placeholder_epub(7, 2)
     old, new = rows(conn)
-    assert old["rev"] == 1 and old["superseded_at"] is not None
+    assert old["removed_at"] is not None and new["rev"] == 2 and new["removed_at"] is None
+
+
+def test_side_by_side_mode_keeps_the_old_copy(make_env, reader):
+    cfg, conn = make_env('update_mode = "side_by_side"')
+    add_work(cfg, conn, 7, "Wip", chapters=3)
+    push_once(cfg, conn)
+    add_revision(cfg, conn, 7, rev=2, chapters=4)
+
+    result = push_once(cfg, conn)
+    assert result.uploaded == ["An Author - Wip [7] (ch 4).epub"]
+    assert (reader.root / "AO3" / "An Author - Wip [7].epub").read_bytes() == placeholder_epub(7, 1)
+    old, new = rows(conn)
+    assert old["rev"] == 1 and old["superseded_at"] is not None and old["removed_at"] is None
     assert new["rev"] == 2 and new["superseded_at"] is None
 
 
-def test_an_edit_that_keeps_the_chapter_count_gets_its_own_name(env):
-    cfg, conn = env
+def test_an_edit_that_keeps_the_chapter_count_gets_its_own_name(make_env):
+    cfg, conn = make_env('update_mode = "side_by_side"')
     add_work(cfg, conn, 8, "Edited", chapters=3)
     push_once(cfg, conn)
     add_revision(cfg, conn, 8, rev=2, chapters=4)
@@ -165,7 +128,7 @@ def test_a_book_she_deleted_is_not_sent_again(env, reader):
     assert not push_once(cfg, conn).eventful
     add_revision(cfg, conn, 9, rev=2, chapters=5)
     result = push_once(cfg, conn)
-    assert result.uploaded == []
+    assert result.uploaded == [] and result.replaced == []
     assert any("deleted on the reader" in s for s in result.skipped)
 
 

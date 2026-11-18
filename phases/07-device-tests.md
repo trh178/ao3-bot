@@ -20,7 +20,9 @@ Flash CrossPoint, then check everything the software assumes about the reader. R
    - `/api/status` reports `device` as X3 or X4
    - a file inside `/.crosspoint` can be downloaded
 4. **Rendering:** open the phase 4 test EPUBs, including one with images, a long work, and one with an adult warning. Note anything slow or broken.
-5. **Cache hash:** upload a book, open it, then list `/.crosspoint`. Is there an `epub_<cphash(path)>` folder?
+5. **Cache hash:** upload a book, open it, then list `/.crosspoint` with `GET /api/files?path=/.crosspoint`. Is there an `epub_<cphash(path)>` folder? To get the expected name, run `python -c "from ao3bot.crosspoint import cache_dir; print(cache_dir('/AO3/<exact file name>'))"`.
+   - The hash function itself already matches SMHasher's published MurmurHash2 value. This step checks that the reader hashes exactly the path the bot uses.
+   - When the hash is right, `push --once` reports updates of opened books as "her chapter is unchanged" and replaces them. When it's wrong, they go side by side with "can't find its cache folder".
 6. **Progress format:** read a book to the middle of chapter 3, then download and decode its `progress.bin`. Does it say chapter 3?
 7. **Mode 1:** push the next revision of that book in place, then open it. Is it at the same spot?
 8. **Finished book:** finish a book, push a revision with a new chapter, then open it. Does it open on the new chapter?
