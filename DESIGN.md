@@ -3,7 +3,7 @@
 **Decision:** a Raspberry Pi at home, on the same Wi‑Fi as the reader. It watches her AO3 list and pushes EPUBs to the reader over the local network.
 **Build plan:** [phases/00-index.md](phases/00-index.md)
 **Gift date:** Tue Dec 15, 2026 (backup: Tue Jan 5, 2027)
-**Device:** Xteink X3 or X4 running [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) 2.0.x
+**Hardware (in hand):** an Xteink X3 and an Xteink X4, both running [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) 2.0.x. One is hers and the other is the test reader. Plus a Raspberry Pi Zero 2 W.
 
 ---
 
@@ -63,11 +63,11 @@ She does two things: she taps *Mark for Later*, and she opens File Transfer (or 
 
 | Piece | What it is | Notes |
 |---|---|---|
-| Hardware | Raspberry Pi Zero 2 W, a 5 V 2.5 A micro‑USB supply, a good 16–32 GB microSD card, a case. About $30–40. | A Pi 3, 4 or 5 works the same. It draws about 1 W. |
+| Hardware | Raspberry Pi Zero 2 W, with a 5 V 2.5 A micro‑USB supply and a good 16–32 GB microSD card | It draws about 1 W. |
 | OS | Raspberry Pi OS Lite (64-bit), headless, reached over SSH | |
 | `ao3bot` | One Python 3.11+ package with the subcommands `poll`, `build`, `push`, `serve`, `status` and `doctor` | It's developed and tested on the laptop, then copied to the Pi. |
 | FanFicFare | A pip dependency, called through its CLI | It builds from `/works/<id>?view_full_work=true`. `-u` adds only the new chapters. |
-| State | SQLite `state.db` | `works` (id, title, authors, chapters, complete, ao3_updated, sources, last_checked); `revisions` (work_id, rev, chapters, sha256, chapter hashes, built_at); `device_files` (work_id, rev, path, delivered_at, superseded_at) |
+| State | SQLite `state.db` | `works` (id, title, authors, chapters, complete, ao3_updated, sources, first_seen, last_checked); `revisions` (work_id, rev, chapters, sha256, chapter_hashes, built_at); `device_files` (device, work_id, rev, path, delivered_at, superseded_at) |
 | Library | `<data_dir>/library/<work_id>/rev-<n>.epub` | It keeps the last 3 revisions of each work, and doubles as a backup of what's on the reader. |
 | Service | One systemd service running `ao3bot serve` | `Restart=always`. Logs go to journald. |
 | Status page | `http://ao3bot.local:8080` | It's for you, on the LAN only. She never needs to know the Pi exists. |
@@ -137,6 +137,7 @@ user_agent      = "ao3bot/0.1 (personal e-reader sync, one user)"
 
 [device]
 host               = "192.168.1.50"        # the reader's DHCP-reserved IP
+name               = "test-x4"             # label in state.db (defaults to host); "her-x3" etc. from phase 10
 folder             = "/AO3"
 update_mode        = "auto"                # auto | in_place | side_by_side (§5)
 cleanup_old        = "after_switch"        # after_switch | manual
@@ -272,7 +273,6 @@ Mode 1 runs only when everything checks out. The bot falls back to Mode 2 in any
 
 | Risk | Mitigation |
 |---|---|
-| The reader ships late | Order now. The laptop phases need no hardware. Jan 5 is the backup date. |
 | AO3 markup changes and breaks the parser | All parsing lives in one file. Keep FanFicFare updated and watch the status page. |
 | AO3 is down or degraded | Backoff. The library keeps everything already built. |
 | AO3 flags the account for automated use | A home IP, about 50–100 requests a day, cookie reuse, an honest user agent, and no writes to AO3 |

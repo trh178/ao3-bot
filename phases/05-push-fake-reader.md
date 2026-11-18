@@ -4,7 +4,7 @@
 
 ## Task
 
-Write `push.py` and the `ao3bot push --once` command. Build them against a **fake reader**, a small local HTTP server that copies CrossPoint's web API, so delivery works before the device arrives.
+Write `push.py` and the `ao3bot push --once` command. Build them against a **fake reader**, a small local HTTP server that copies CrossPoint's web API, so delivery can be built and tested without touching a real reader.
 
 - **The fake reader** (`tests/fake_reader.py`; the standard library's `http.server` is enough):
   - It stores files in a temp folder.

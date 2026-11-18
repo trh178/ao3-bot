@@ -1,0 +1,15 @@
+# Holds her AO3 password once it's filled in. Never commit or share it.
+config.toml
+
+# Local state: the database, cookies, and the EPUB library
+data/
+library/
+*.db
+*.db-journal
+cookies*
+
+# Python
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/

@@ -1,0 +1,39 @@
+# ao3bot config. Copy this file to config.toml and edit the copy.
+#
+# config.toml is gitignored. Once her password is in it, it should live only
+# on the Pi, at /etc/ao3bot/config.toml with mode 600.
+#
+# Relative paths are resolved from the folder this file is in.
+
+[ao3]
+# Leave both empty to run logged out (that's how all testing happens).
+# A username with no password means that user's public pages only.
+# Gift day: her username, plus the new password she sets that day.
+username = ""
+password = ""
+
+# Where works come from: "manual", "marked_for_later", "bookmarks".
+# Gift day: ["marked_for_later"]
+sources = ["manual"]
+
+# The manual source: one AO3 work ID or work URL per line.
+manual_ids_file = "ids.txt"
+
+poll_minutes = 30          # 15 at the least, to go easy on AO3
+adult_ok = true
+backfill_newest = 10       # how many existing entries a newly added source delivers
+user_agent = "ao3bot/0.1 (personal e-reader sync, one user)"
+
+[device]
+host = "192.168.1.50"      # the reader's DHCP-reserved IP
+# name = "test-x4"         # label for this reader in state.db; defaults to host
+folder = "/AO3"
+update_mode = "auto"       # auto | in_place | side_by_side
+cleanup_old = "after_switch"   # after_switch | manual
+cleanup_grace_days = 7
+
+[epub]
+max_image = "480x800"      # X4. The X3 is 528x792.
+
+[paths]
+data_dir = "data"          # state.db, cookies, library/. On the Pi: "/var/lib/ao3bot"

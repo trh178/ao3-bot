@@ -1,10 +1,12 @@
 # Phase 7: Real device tests
 
-**Where:** laptop + reader · **Needs:** 1 (the reader), 5, 6 · **Unblocks:** 9 · **Target:** the week the reader arrives (aim for Nov 24–30)
+**Where:** laptop + readers · **Needs:** 5 and 6 (steps 1–3 need nothing, so do them any time) · **Unblocks:** 9 · **Target:** week 2 (Nov 24–30)
 
 ## Task
 
 Flash CrossPoint, then check everything the software assumes about the reader. Run the pusher from the laptop against the real device. This is the go/no-go for in-place updates.
+
+**First, decide which reader is hers.** The other one is the test reader, and every step below runs on it. On her reader, do only steps 1, 2 and 4: flash it, put it on the Wi‑Fi, and check rendering, since the X3 and X4 have different screens. That keeps her reader clean until the welcome batch in phase 10.
 
 1. **Flash** CrossPoint 2.0.x, following its README. Note the version.
 2. **Network:**
@@ -26,14 +28,16 @@ Flash CrossPoint, then check everything the software assumes about the reader. R
 ## Done when
 
 - [ ] Steps 1–10 each have a written result (pass or fail, plus notes) at the bottom of this file
+- [ ] Steps 1, 2 and 4 also done on her reader, with its reserved IP noted
 - [ ] These decisions are written down:
+  - [ ] which reader is hers, and which is the test reader
   - [ ] `update_mode`: `auto` if steps 5–8 passed, or `side_by_side` if any of them failed
   - [ ] overnight sync: it works, or she opens File Transfer whenever she wants new stories
-  - [ ] the `max_image` size for this model (X4 480×800, X3 528×792)
+  - [ ] the `max_image` size for her model (X4 480×800, X3 528×792)
 
 ## How to test
 
-The phase is the test. Run `ao3bot push --once` with `host` set to the reader's IP, using public test works only.
+The phase is the test. Run `ao3bot push --once` with `host` set to the test reader's IP, using public test works only. Steps 1–3 need no ao3bot code: a browser or `curl` against the reader's web page and API is enough.
 
 ## How it fits
 

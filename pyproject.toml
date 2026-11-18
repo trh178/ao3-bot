@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ao3bot"
+dynamic = ["version"]
+description = "Deliver AO3 Marked for Later stories to a CrossPoint e-reader"
+requires-python = ">=3.11"
+# Keep this list short: everything here has to install on the Pi Zero 2 W too.
+# Phase 4 pins FanFicFare once a version has been tested.
+dependencies = [
+    "fanficfare",
+    "requests",
+    "beautifulsoup4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+ao3bot = "ao3bot.cli:main"
+
+[tool.setuptools]
+packages = ["ao3bot"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ao3bot.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

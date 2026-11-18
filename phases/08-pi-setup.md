@@ -1,6 +1,6 @@
 # Phase 8: Set up the Pi
 
-**Where:** Pi · **Needs:** 1 (the Pi) · **Unblocks:** 9 · **Target:** the day the Pi arrives (it's independent of the software work)
+**Where:** Pi · **Needs:** nothing (the Pi is in hand) · **Unblocks:** 9 · **Target:** any time in weeks 1–2 (it's independent of the software work)
 
 ## Task
 
@@ -43,7 +43,7 @@ The checklist is the test. Repeat the power-cut check after the Pi has been up f
 
 ## How it fits
 
-This phase is independent of phases 2–7, so do it whenever the Pi arrives. Phase 9 copies the code onto this box and turns it into a service.
+This phase is independent of phases 2–7, so do it whenever suits you. Phase 9 copies the code onto this box and turns it into a service.
 
 ## Watch out for
 

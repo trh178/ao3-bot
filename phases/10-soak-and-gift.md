@@ -7,7 +7,7 @@
 Leave the system running for at least 5 days without touching it, and break it on purpose a few times. Then load a welcome batch and wrap the reader. On gift day, switch the bot to her account.
 
 **Soak (Dec 8–13)**
-- Keep the bot running on the manual source, logged out (or on your own account).
+- Keep the bot running on the manual source, logged out (or on your own account), pushing to the **test reader**.
 - Add a work or two each day, including a couple of active public WIPs so that real updates come through.
 - Break it on purpose, once each:
   - pull the Pi's power during a build
@@ -17,6 +17,7 @@ Leave the system running for at least 5 days without touching it, and break it o
 - Back up `state.db` and the library to your laptop.
 
 **Welcome batch (Dec 13–14)**
+- Switch `[device]` to **her reader**: set `host` to its reserved IP, `name` to something like `"her-x3"`, and `max_image` to its screen size. Restart the service.
 - Put the stories you want her to find on day one into the manual list.
 - Let them sync, then open each one on the reader.
 - Wrap it.
@@ -55,4 +56,4 @@ This is the last step before the gift. Everything after it is optional (phase 11
 - **Decide the backfill.** Her Marked for Later list may already be long. `backfill_newest` (10 by default) sets how many existing entries arrive on day one, and the rest are marked as seen. Decide whether she'd rather have all of them.
 - **The Marked for Later parser gets its first real test on gift day** if you had no AO3 account of your own (phase 3). Compare `doctor`'s output with her actual list.
 - **Tell her that deleting AO3 books on the reader is fine, but replacing them over USB isn't.**
-- **Don't cut the soak short.** If the reader arrived late and phases 7–9 slipped, move the gift to Jan 5.
+- **Don't cut the soak short.** If phases 7–9 slip, move the gift to Jan 5 instead.
